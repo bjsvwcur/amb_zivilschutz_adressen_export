@@ -32,7 +32,7 @@ Nachfolgende Befehle aus dem Verzeichnis /amb_zivilschutz_adressen_export/develo
 
 PW für admin = admin
 ```
-psql -h localhost -p 54322 -d pub -U admin -c "SET ROLE admin" --single-transaction -f agi_mopublic_pub.sql -f agi_mopublic_grants.sql -f amb_zivilschutz_adressen_staging_pub.sql -f amb_zivilschutz_adressen_staging_pub_grants.sql -f agi_av_gb_admin_einteilung_pub.sql
+psql -h localhost -p 54322 -d pub -U admin -c "SET ROLE admin" --single-transaction -f agi_mopublic_pub.sql -f agi_mopublic_grants.sql -f amb_zivilschutz_adressen_staging_pub.sql -f amb_zivilschutz_adressen_staging_pub_grants.sql -f agi_av_gb_admin_einteilung_pub.sql -f agi_av_gb_admin_einteilung_pub_grants.sql
 ```
 
 Testdaten in pub-DB importieren:

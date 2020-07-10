@@ -56,7 +56,7 @@ geb_objektnamen AS (
 )
 
 
-INSERT INTO amb_zivilschutz_adressen_staging.adressen_zivilschutz
+INSERT INTO amb_zivilschutz_adressen_staging_pub.adressen_zivilschutz
 (
     SELECT
     a.lokalisationsname,

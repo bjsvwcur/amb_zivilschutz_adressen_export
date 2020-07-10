@@ -7,7 +7,7 @@ apply plugin: 'org.hidetake.ssh'
 
 remotes {
     ftpServer {
-        host = "${ftpServerZivilschutz}"
+        host = "${ftpURLZivilschutz}"
         user = "${ftpUserZivilschutz}"
         password = "${ftpPwdZivilschutz}"
     }
@@ -30,8 +30,8 @@ task clearStaging(type: SqlExecutor){
 }
 
 task exportAdressenZivilschutz(type: CsvExport, dependsOn: stageAdressenZivilschutz){
-    database = [dbUriPub, dbUsePub, dbPwdPub]
-    schemaName = "amb_zivilschutz_adressen_staging"
+    database = [dbUriPub, dbUserPub, dbPwdPub]
+    schemaName = "amb_zivilschutz_adressen_staging_pub"
     tableName = "adressen_zivilschutz"
     dataFile = csvFileName
     encoding = "UTF-8"
