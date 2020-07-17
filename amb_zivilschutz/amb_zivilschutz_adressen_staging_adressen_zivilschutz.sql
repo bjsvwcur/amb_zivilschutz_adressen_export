@@ -2,31 +2,34 @@
 WITH
 adressen AS (
     SELECT
-        DISTINCT ON (gebadresse.strassenname, gebadresse.hausnummer, gebadresse.bfs_nr) -- in Tabelle adressen.adressen gibt es doppelte Adresse wegen EO.Flaechenelement
-        gebadresse.t_id,
-        gebadresse.strassenname AS lokalisationsname,
-        gebadresse.hausnummer,
-        gebadresse.plz As plz,
---        ort.ortsname as ortschaft,
---        gemeinde.gemeindename AS gemeinde,
-        gebadresse.egid as gwr_egid,
-        gebadresse.edid as gwr_edit,
-        ST_X(gebadresse.lage) AS koord_ost,
-        st_y(gebadresse.lage) AS koord_nord,
-        gebadresse.astatus AS status,
-        boden.geometrie AS gwr_egid_geom,
-        gebadresse.lage as gwr_edid_geom,
-        gebadresse.pos,
-        gebadresse.bfs_nr
+        DISTINCT ON (a.strassenname, a.hausnummer, a.ortschaft) -- in Tabelle adressen.adressen gibt es doppelte Adresse wegen EO.Flaechenelement
+        a.t_id,
+        a.strassenname AS lokalisationsname,
+        a.hausnummer,
+        a.plz AS plz,
+        a.ortschaft,
+        g.gemeindename AS gemeinde,
+        a.egid AS gwr_egid,
+        a.edid AS gwr_edid,
+        ST_X(a.lage) AS koord_ost,
+        st_y(a.lage) AS koord_nord,
+        a.astatus AS status,
+        b.geometrie AS gwr_egid_geom,
+        a.lage AS gwr_edid_geom,
+        a.bfs_nr
     FROM
-        agi_mopublic_pub.mopublic_gebaeudeadresse  gebadresse,
-        agi_mopublic_pub.mopublic_bodenbedeckung  boden
---    LEFT JOIN agi_mopublic_pub.mopublic_ortsname AS ort
---        ON ort.bfs_nr = a.bfs_nr
---    LEFT JOIN agi_mopublic_pub.mopublic_gemeindegrenze as gemeinde
---        ON gemeinde.bfs_nr = a.bfs_nr
+        agi_mopublic_pub.mopublic_gebaeudeadresse AS a
+    LEFT JOIN agi_mopublic_pub.mopublic_bodenbedeckung AS b
+        ON 
+        a.lage && b.geometrie
+        AND
+        st_distance(a.lage, b.geometrie) = 0
+    LEFT JOIN agi_mopublic_pub.mopublic_gemeindegrenze AS g
+        ON a.bfs_nr = g.bfs_nr
     WHERE
-        gebadresse.hausnummer is not null -- nur die mit Hausnummern
+        a.hausnummer IS NOT NULL -- nur die mit Hausnummern
+    AND
+        b.art_txt = 'Gebaeude'
 ),
 grundstueck AS (
     SELECT
@@ -41,20 +44,18 @@ grundstueck AS (
 ),
 geb_objektnamen AS (
     SELECT
-        adresse.t_id,
-        STRING_AGG(objektname.objektname, ', ') as objektname -- mehrere Objektnamen pro BB.Gebäude möglich
-    FROM adressen AS adresse,
-        agi_mopublic_pub.mopublic_objektname_pos AS objektname
-    WHERE
-        objektname.art_txt = 'Gebaeude' -- nur die Objektnamen die einem Gebäude zugewiesen sind
---        AND
---        adresse.gwr_edid_geom && b.geometrie
---        AND
---        st_distance(a.gwr_egid_geom, b.geometrie) = 0
+        a.t_id,
+        STRING_AGG(o.objektname, ', ') AS objektname -- mehrere Objektnamen pro BB.Gebäude möglich
+    FROM adressen AS a
+    JOIN
+        agi_mopublic_pub.mopublic_objektname_pos AS o 
+        ON 
+        o.pos && a.gwr_egid_geom
+        AND
+        st_distance(o.pos, a.gwr_egid_geom) = 0
     GROUP BY
-        adresse.t_id
+        a.t_id
 )
-
 
 INSERT INTO amb_zivilschutz_adressen_staging_pub.adressen_zivilschutz
 (
@@ -62,10 +63,10 @@ INSERT INTO amb_zivilschutz_adressen_staging_pub.adressen_zivilschutz
     a.lokalisationsname,
     a.hausnummer,
         a.plz,
---        a.ortschaft,
---        a.gemeinde,
+        a.ortschaft,
+        a.gemeinde,
         a.gwr_egid,
-        a.gwr_egid,
+        a.gwr_edid,
         a.koord_ost,
         a.koord_nord,
         a.status,
@@ -79,9 +80,9 @@ INSERT INTO amb_zivilschutz_adressen_staging_pub.adressen_zivilschutz
         ON a.t_id = o.t_id,
         grundstueck AS g
     WHERE
---        a.gwr_edid_geom && g.geometrie
---        AND
-        st_distance(a.pos, g.geometrie) = 0
+        a.gwr_edid_geom && g.geometrie
+        AND
+        st_distance(a.gwr_edid_geom, g.geometrie) = 0
         AND
         a.bfs_nr = g.bfs_nr
 )
